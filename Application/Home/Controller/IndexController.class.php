@@ -2,7 +2,67 @@
 namespace Home\Controller;
 use Think\Controller;
 class IndexController extends Controller {
-    public function index(){
-        $this->show('<style type="text/css">*{ padding: 0; margin: 0; } div{ padding: 4px 48px;} body{ background: #fff; font-family: "微软雅黑"; color: #333;font-size:24px} h1{ font-size: 100px; font-weight: normal; margin-bottom: 12px; } p{ line-height: 1.8em; font-size: 36px } a,a:hover{color:blue;}</style><div style="padding: 24px 48px;"> <h1>:)</h1><p>欢迎使用 <b>ThinkPHP</b>！</p><br/>版本 V{$Think.version}</div><script type="text/javascript" src="http://ad.topthink.com/Public/static/client.js"></script><thinkad id="ad_55e75dfae343f5a1"></thinkad><script type="text/javascript" src="http://tajs.qq.com/stats?sId=9347272" charset="UTF-8"></script>','utf-8');
+    public function index() {
+    	session('uid', null);
+    	session('urelation', null);
+    	$this->display();
+    }
+
+    public function add() {
+    	$code = substr(sha1(genRandStr()), 0, 15);
+    	$time = time();
+    	M('story')->add(array(
+    		'name' => I('name'),
+    		'code' => $code,
+    		'createtime' => $time,
+    		'updatetime' => $time
+    		));
+
+    	M('sentence')->add(array(
+    		'code' => $code,
+    		'parent_id' => -1,
+    		'keyword' => '',
+    		'content' => '我是'.I('name'),
+    		'user_id' => -1,
+    		'createtime' => $time
+    		));
+    	M('sentence')->add(array(
+    		'code' => $code,
+    		'parent_id' => -1,
+    		'keyword' => '',
+    		'content' => '好久不见',
+    		'user_id' => -1,
+    		'createtime' => $time
+    		));
+
+    	$this->redirect('Story/index', array('code'=>$code));
+    }
+
+    public function who() {
+    	session('code', I('code'));
+    	$this->story = M('story')->where(array('code'=>I('code')))->find();
+    	$this->display();
+    }
+
+    public function who_handle() {
+    	$count = M('user')->where(array('code'=>$_SESSION['code'], 'relation'=>I('relation')))->count();
+    	if ($count == 0) {
+    		$time = time();
+    		M('user')->add(array(
+    			'code' => $_SESSION['code'], 
+    			'relation' => I('relation'),
+    			'createtime' => $time,
+    			'activetime' => $time
+    			));
+    	}
+    	else {
+    		M('user')->where(array('code' => $_SESSION['code'], 'relation' => I('relation')))->save(array('activetime'=>time()));
+    	}
+    	$user = M('user')->where(array('code'=>$_SESSION['code'], 'relation'=>I('relation')))->find();
+    	session('urelation', I('relation'));
+    	session('uid', $user['id']);
+    	$url = $_SESSION['url'];
+    	session('url', null);
+    	$this->redirect($url);
     }
 }

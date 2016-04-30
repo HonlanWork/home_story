@@ -1,0 +1,155 @@
+<style>
+#main {
+	padding-bottom: 277px;
+}
+#sentences {
+	padding: 40px;
+}
+#control {
+	width: 100%;
+	position: fixed;
+	bottom: 0;
+	background-color: rgba(240,240,240,0.8);
+	padding: 20px 40px;
+}
+#control h5 {
+	text-align: center;
+	margin-bottom: 20px;
+}
+#control input {
+	display: inline-block;
+	max-width: 200px;
+	font-size: 12px;
+	padding: 3px 6px;
+	height: 28px;
+}
+#control p {
+	font-size: 12px;
+}
+#control button {
+	font-size: 12px;
+	background: transparent;
+	color: #999;
+	border-color: #999;
+	margin-top: 12px;
+	transition: color, background-color .3s;
+	-o-transition: color, background-color, .3s;
+	-ms-transition: color, background-color, .3s;
+	-moz-transition: color, background-color, .3s;
+	-webkit-transition: color, background-color, .3s;
+}
+#control button:hover {
+	color: #fff;
+	background-color: #999;
+}
+#sentences div {
+	font-size: 13px;
+	display: inline-block;
+	margin: 0;
+	padding: 3px 6px;
+	border-radius: 3px;
+	color: #666;
+	display: none;
+	transition: background-color .3s;
+	-o-transition: background-color, .3s;
+	-ms-transition: background-color, .3s;
+	-moz-transition: background-color, .3s;
+	-webkit-transition: background-color, .3s;
+}
+#sentences div b.active {
+	color: #6767E4;
+	border-bottom: 1px solid #6767E4;
+}
+#sentences div.active {
+	background-color: rgba(241,149,55,0.4);
+}
+#sentences div:hover {
+	cursor: pointer;
+}
+</style>
+<div id="sentences">
+	<foreach name="sentences" item="v">
+		<div class="cell" name="{$v['parent_id']}{$v['keyword']}" id="{$v['id']}">{$v.content}</div>
+	</foreach>
+</div>
+<div id="control">
+	<h5 style="color:#E46A6A;">选择让你有感而发的那句话</h5>
+	<p style="width:100%;border-bottom:1px solid #ddd;padding-bottom:5px;" id="choice">&nbsp;</p>
+	<div style="margin-top:15px;">
+		<p style="display:inline-block;margin-right:36px;color:#aaa;">中的</p><input type="text" class="form-control" name="keyword">
+	</div>
+	<div style="margin-top:5px;">
+		<p style="display:inline-block;margin-right:12px;color:#aaa;">让我想到</p><input type="text" class="form-control" name="content">
+	</div>
+	<div style="text-align:center;">
+		<button class="btn btn-default disabled">提交</button>
+	</div>
+</div>
+<script>
+$(document).ready(function() {
+	$('#sentences').on('click', 'div.cell', function(event) {
+		$('#sentences div.cell').removeClass('active');
+		$(this).addClass('active');
+		var tmp = $(this).text();
+		$('#choice').text(tmp);
+		$('input[name="keyword"]').val('');
+		$('input[name="content"]').val('');
+		$('#main').css('padding-bottom', $('#control').height() + 80);
+		$('#main button').addClass('disabled');
+	});
+
+	$('#sentences div b').click(function(event) {
+		if ($(this).hasClass('active')) {
+			event.stopPropagation();
+		}
+		$(this).removeClass('active');
+		$('#sentences div[name="' + $(this).parent('div.cell').attr('id') + $(this).text() + '"]').css('display', 'inline-block');
+		
+	});
+
+	$('#sentences div[name="-1"]').css('display', 'inline-block');
+
+	$('input[name="keyword"]').keyup(function(event) {
+		if ($('#choice').text() != '' && $('input[name="keyword"]').val() != '' && $('input[name="content"]').val() != '') {
+			$('#main button').removeClass('disabled');
+		}
+		else {
+			$('#main button').addClass('disabled');
+		}
+	});
+
+	$('input[name="content"]').keyup(function(event) {
+		if ($('#choice').text() != '' && $('input[name="keyword"]').val() != '' && $('input[name="content"]').val() != '') {
+			$('#main button').removeClass('disabled');
+		}
+		else {
+			$('#main button').addClass('disabled');
+		}
+	});
+
+	$('#main button').click(function(event) {
+		$.ajax({
+			url: '{:U("Story/add")}',
+			type: 'POST',
+			dataType: 'json',
+			data: {
+				code: '{$code}',
+				parent_id: $('#sentences div.active').attr('id'),
+				keyword: $('input[name="keyword"]').val(),
+				content: $('input[name="content"]').val()
+			},
+		})
+		.done(function(data) {
+			console.log(data);
+			$p = '<div class="cell" style="display:inline-block;" name="' + data['parent_id'] + data['keyword'] + '" id="' + data['id'] + '">' + data['content'] + '</div>';
+			$('#sentences div.active').after($p);
+			$('#sentences div').removeClass('active');
+		})
+		.fail(function() {
+		})
+		.always(function() {
+		});
+		
+	});
+});
+</script>
